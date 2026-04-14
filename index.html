@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brasker Digital — Hub de Agentes de IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0F1A;
+    --surface: #131825;
+    --surface-hover: #1A2035;
+    --border: #1E2A45;
+    --border-light: #2A3A5C;
+    --text: #E2E8F0;
+    --text-muted: #8B9DC3;
+    --text-dim: #4A5A7A;
+    --blue: #4DAFFF;
+    --pink: #F07AAE;
+    --lilac: #C9A8E8;
+    --accent: #4DAFFF;
+    --accent-glow: rgba(77,175,255,0.15);
+    --success: #10B981;
+    --yellow: #FACC15;
+    --yellow-glow: rgba(250,204,21,0.12);
+    --bpo-color: #F59E0B;
+    --danger: #EF4444;
+    --font: 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  ::selection { background: rgba(77,175,255,0.25); color: #fff; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  input, textarea, select { font-family: var(--font); }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-8px); } }
+  .anim-item { animation: fadeUp 0.5s ease both; }
+  .bg-glow {
+    position:fixed; top:-50%; right:-30%; width:80vw; height:80vw; border-radius:50%;
+    background:radial-gradient(circle, rgba(77,175,255,0.04) 0%, transparent 60%);
+    pointer-events:none; z-index:0;
+  }
+  header {
+    position:sticky; top:0; z-index:100;
+    background:rgba(11,15,26,0.93); backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--border);
+  }
+  .header-inner {
+    max-width:1200px; margin:0 auto; padding:12px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:10px;
+  }
+  .logo { display:flex; align-items:center; gap:14px; cursor:pointer; }
+  .logo img { height:52px; border-radius:10px; image-rendering:auto; }
+  .logo-text-group { display:flex; flex-direction:column; gap:1px; }
+  .logo-brand { display:flex; align-items:baseline; gap:6px; }
+  .logo-brasker { font-weight:800; font-size:22px; letter-spacing:-0.5px; color:var(--blue); }
+  .logo-digital { font-weight:700; font-size:22px; letter-spacing:-0.5px; color:var(--pink); }
+  .logo-sub { font-size:12px; color:var(--lilac); font-weight:600; letter-spacing:0.5px; }
+  .header-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn-primary {
+    padding:12px 28px; border-radius:10px; border:none;
+    background:linear-gradient(135deg, var(--blue), #2B8BDF); color:white;
+    font-weight:600; font-size:15px; cursor:pointer; transition:all 0.2s; font-family:var(--font);
+  }
+  .btn-primary:hover { filter:brightness(1.15); transform:translateY(-1px); }
+  .btn-ghost {
+    padding:10px 20px; border-radius:10px; border:1.5px solid var(--border);
+    background:transparent; color:var(--text-muted); font-weight:500; font-size:14px;
+    cursor:pointer; transition:all 0.2s; font-family:var(--font);
+  }
+  .btn-ghost:hover { border-color:var(--blue); color:var(--text); }
+  .btn-danger {
+    padding:6px 14px; border-radius:8px; border:1.5px solid var(--danger);
+    background:rgba(239,68,68,0.1); color:var(--danger); font-weight:600; font-size:12px;
+    cursor:pointer; transition:all 0.2s; font-family:var(--font);
+  }
+  .btn-danger:hover { background:rgba(239,68,68,0.25); }
+  .input-style {
+    width:100%; padding:12px 16px; border-radius:10px;
+    border:1.5px solid var(--border); background:var(--surface);
+    color:var(--text); font-size:15px; outline:none;
+    transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-style:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--accent-glow); }
+  .input-style::placeholder { color:var(--text-dim); }
+  .card-hover { transition:all 0.3s cubic-bezier(0.4,0,0.2,1); cursor:pointer; }
+  .card-hover:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(0,0,0,0.4); }
+  .tag { display:inline-block; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:500; background:var(--accent-glow); color:var(--blue); font-family:var(--font-mono); }
+  .type-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  main { max-width:1200px; margin:0 auto; padding:0 24px 60px; position:relative; z-index:1; }
+  .view-container { opacity:0; transform:translateY(20px); transition:all 0.5s ease; }
+  .view-container.active { opacity:1; transform:translateY(0); }
+  .sector-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:20px; }
+  .sector-card { background:var(--surface); border-radius:16px; border:1px solid var(--border); padding:28px; position:relative; overflow:hidden; }
+  .sector-card .accent-bar { position:absolute; top:0; left:0; right:0; height:3px; }
+  .sector-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:16px; }
+  .stats-bar { display:flex; justify-content:center; gap:40px; margin-bottom:48px; flex-wrap:wrap; }
+  .stat-value { font-size:28px; font-weight:800; font-family:var(--font-mono); }
+  .stat-label { font-size:12px; color:var(--text-dim); font-weight:500; }
+  .agent-card { background:var(--surface); border-radius:14px; border:1px solid var(--border); padding:24px; transition:all 0.25s ease; }
+  .agent-card:hover { border-color:var(--border-light); }
+  .filter-btn { padding:10px 16px; border-radius:10px; border:1.5px solid var(--border); background:transparent; color:var(--text-muted); font-weight:600; font-size:13px; cursor:pointer; transition:all 0.2s; font-family:var(--font); }
+  .priority-btn { flex:1; padding:10px; border-radius:10px; border:1.5px solid var(--border); background:transparent; color:var(--text-dim); font-weight:600; font-size:13px; cursor:pointer; transition:all 0.2s; text-transform:capitalize; font-family:var(--font); }
+  .req-status-select { padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--bg); font-size:12px; font-weight:600; cursor:pointer; font-family:var(--font); }
+  .cta-box { margin-top:48px; text-align:center; padding:36px; border-radius:16px; border:1px dashed var(--border-light); background:rgba(19,24,37,0.5); }
+  footer { text-align:center; padding:24px; border-top:1px solid var(--border); font-size:12px; color:var(--text-dim); }
+  .footer-brand { color:var(--blue); font-weight:600; }
+  .footer-digital { color:var(--pink); font-weight:600; }
+  .breadcrumb { padding:24px 0 8px; font-size:13px; color:var(--text-dim); }
+  .breadcrumb a { color:var(--text-muted); cursor:pointer; text-decoration:none; }
+  .breadcrumb a:hover { color:var(--text); }
+  .hidden { display:none !important; }
+  .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px; max-width:500px; width:100%; max-height:90vh; overflow-y:auto; }
+  @media (max-width:600px) {
+    .header-actions { width:100%; justify-content:flex-end; }
+    .stats-bar { gap:24px; }
+    .logo img { height:40px; }
+    .logo-brasker, .logo-digital { font-size:18px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo" onclick="navigate('home')">
+      
+      <div class="logo-text-group">
+        <div class="logo-brand">
+          <span class="logo-brasker">brasker</span>
+          <span class="logo-digital">digital</span>
+        </div>
+        <div class="logo-sub">Hub de Agentes IA</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-ghost" style="font-size:13px;padding:8px 16px" onclick="navigate('request')">✦ Solicitar Agente</button>
+      <button class="btn-ghost" style="font-size:13px;padding:8px 16px" onclick="navigate('admin')">⚡ Painel</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- HOME -->
+  <div id="view-home" class="view-container">
+    <div style="text-align:center;padding:60px 0 50px">
+      <div style="font-size:13px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;font-family:var(--font-mono)">✦ Hub de Agentes IA</div>
+      <h1 style="font-size:clamp(32px,5vw,52px);font-weight:800;letter-spacing:-1.5px;line-height:1.1;margin-bottom:16px">
+        Encontre o agente<br><span style="color:var(--blue)">ideal para sua tarefa</span>
+      </h1>
+      <p style="font-size:17px;color:var(--text-muted);max-width:520px;margin:0 auto;line-height:1.6">
+        Selecione seu setor abaixo para explorar os agentes e super agentes disponíveis. Não encontrou o que precisa? Solicite um novo.
+      </p>
+    </div>
+    <div class="stats-bar" id="stats-bar"></div>
+    <div class="sector-grid" id="sector-grid"></div>
+    <div class="cta-box">
+      <div style="font-size:22px;margin-bottom:6px">🔍</div>
+      <div style="font-weight:600;font-size:16px;margin-bottom:6px">Não encontrou o que precisa?</div>
+      <div style="font-size:14px;color:var(--text-muted);max-width:400px;margin:0 auto 18px">Descreva sua necessidade e nós criaremos um agente personalizado para você.</div>
+      <button class="btn-primary" onclick="navigate('request')">Solicitar Novo Agente</button>
+    </div>
+  </div>
+
+  <!-- SECTOR -->
+  <div id="view-sector" class="view-container hidden">
+    <div class="breadcrumb"><a onclick="navigate('home')">Hub</a> › <span id="sector-breadcrumb" style="font-weight:600"></span></div>
+    <div id="sector-header" style="display:flex;align-items:center;gap:16px;margin-bottom:32px;padding-top:8px"></div>
+    <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;align-items:center">
+      <div style="position:relative;flex:1;min-width:240px">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:16px;pointer-events:none">🔍</span>
+        <input class="input-style" id="search-input" style="padding-left:40px" placeholder="Buscar por nome, descrição ou tag..." oninput="renderAgents()">
+      </div>
+      <div id="filter-group" style="display:flex;gap:6px"></div>
+    </div>
+    <div id="agent-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    <div style="margin-top:32px;padding:24px;border-radius:14px;border:1px dashed var(--border-light);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+      <div>
+        <div style="font-weight:600;margin-bottom:4px">Precisa de algo diferente?</div>
+        <div style="font-size:13px;color:var(--text-muted)">Solicite a criação de um agente personalizado para sua demanda.</div>
+      </div>
+      <button class="btn-primary" onclick="navigate('request')">Solicitar Agente</button>
+    </div>
+  </div>
+
+  <!-- REQUEST FORM -->
+  <div id="view-request" class="view-container hidden" style="max-width:600px;margin:0 auto">
+    <div class="breadcrumb"><a onclick="navigate('home')">Hub</a> › <span style="color:var(--blue);font-weight:600">Solicitar Agente</span></div>
+    <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px">Solicitar Novo Agente</h2>
+    <p style="font-size:15px;color:var(--text-muted);margin-bottom:36px;line-height:1.6">Descreva sua necessidade e nós avaliaremos a criação de um agente ou super agente para resolver sua demanda.</p>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Seu nome *</label><input class="input-style" id="req-name" placeholder="Ex: Maria Silva"></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Setor *</label><select class="input-style" id="req-sector" style="cursor:pointer"><option value="">Selecione seu setor</option></select></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Descreva sua necessidade *</label><textarea class="input-style" id="req-desc" rows="5" placeholder="Descreva detalhadamente a tarefa que você gostaria que um agente executasse..." style="resize:vertical;min-height:120px"></textarea></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Prioridade</label><div id="priority-group" style="display:flex;gap:8px"></div></div>
+      <div id="form-error" class="hidden" style="padding:12px 16px;border-radius:10px;background:rgba(239,68,68,0.1);color:var(--danger);font-size:13px;font-weight:500"></div>
+      <button class="btn-primary" onclick="submitRequest()" style="width:100%;padding:14px;font-size:16px">Enviar Solicitação</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="view-success" class="view-container hidden" style="max-width:500px;margin:0 auto;text-align:center;padding:80px 20px">
+    <div style="width:72px;height:72px;border-radius:50%;background:rgba(16,185,129,0.1);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 24px;animation:float 3s ease-in-out infinite;color:var(--success)">✓</div>
+    <h2 style="font-size:26px;font-weight:800;margin-bottom:10px">Solicitação Enviada!</h2>
+    <p style="font-size:15px;color:var(--text-muted);line-height:1.6;margin-bottom:32px">Sua demanda foi registrada. Nossa equipe irá analisar e criar o agente.</p>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="btn-ghost" onclick="navigate('home')">Voltar ao Hub</button>
+      <button class="btn-primary" onclick="navigate('request')">Nova Solicitação</button>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="view-admin" class="view-container hidden">
+    <div class="breadcrumb"><a onclick="navigate('home')">Hub</a> › <span style="color:var(--blue);font-weight:600">Painel Administrativo</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:32px">
+      <div>
+        <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px">Painel Administrativo</h2>
+        <p style="font-size:14px;color:var(--text-muted)">Gerencie agentes e solicitações</p>
+      </div>
+      <button class="btn-primary" onclick="openAddAgentModal()">＋ Cadastrar Agente</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:24px">
+      <button class="filter-btn" id="tab-agents" onclick="switchAdminTab('agents')" style="border-color:var(--blue);color:var(--blue);background:var(--accent-glow)">Agentes Cadastrados</button>
+      <button class="filter-btn" id="tab-requests" onclick="switchAdminTab('requests')">Solicitações</button>
+    </div>
+    <div id="admin-agents-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    <div id="admin-requests-list" class="hidden" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+</main>
+
+<!-- MODAL ADD AGENT -->
+<div id="add-agent-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeAddAgentModal()">
+  <div class="modal-box">
+    <h3 style="font-size:20px;font-weight:700;margin-bottom:20px">Cadastrar Novo Agente</h3>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Nome do Agente *</label><input class="input-style" id="add-agent-name" placeholder="Ex: Agente Conciliação Bancária"></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Tipo *</label>
+        <div style="display:flex;gap:8px">
+          <button class="filter-btn" id="type-agente" onclick="selectAgentType('agente')" style="flex:1;border-color:var(--blue);color:var(--blue);background:var(--accent-glow)">Agente</button>
+          <button class="filter-btn" id="type-super-agente" onclick="selectAgentType('super-agente')" style="flex:1">⚡ Super Agente</button>
+        </div>
+      </div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Setor *</label><select class="input-style" id="add-agent-sector" style="cursor:pointer"><option value="">Selecione o setor</option></select></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Descrição *</label><textarea class="input-style" id="add-agent-desc" rows="4" placeholder="Descreva o que este agente faz..." style="resize:vertical;min-height:100px"></textarea></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Tags (separadas por vírgula)</label><input class="input-style" id="add-agent-tags" placeholder="Ex: conciliação, banco, extratos"></div>
+      <div id="add-agent-error" class="hidden" style="padding:12px 16px;border-radius:10px;background:rgba(239,68,68,0.1);color:var(--danger);font-size:13px;font-weight:500"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn-ghost" onclick="closeAddAgentModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveNewAgent()">Salvar Agente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div id="delete-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="modal-box" style="max-width:400px;text-align:center">
+    <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">Excluir Agente?</h3>
+    <p id="delete-agent-name" style="font-size:14px;color:var(--text-muted);margin-bottom:24px"></p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn-ghost" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn-danger" style="padding:12px 24px;font-size:14px" onclick="confirmDelete()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 <span class="footer-brand">Brasker</span> <span class="footer-digital">Digital</span> — Todos os direitos reservados</footer>
+
+<!-- OVERLAY DE CARREGAMENTO -->
+<div id="loading-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#0B0F1A;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="font-size:48px;animation:float 2s ease-in-out infinite">🤖</div>
+  <div style="color:#4DAFFF;font-size:17px;font-weight:700;font-family:'Outfit',sans-serif">Carregando Hub de Agentes...</div>
+  <div style="color:#4A5A7A;font-size:12px;font-family:'JetBrains Mono',monospace;margin-top:4px">Sincronizando dados em tempo real</div>
+</div>
+
+<!-- ERRO DE CONFIGURAÇÃO -->
+<div id="config-error-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#0B0F1A;z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center">
+  <div style="font-size:48px">⚙️</div>
+  <div style="color:#EF4444;font-size:20px;font-weight:800;font-family:'Outfit',sans-serif">Firebase não configurado</div>
+  <div style="color:#8B9DC3;font-size:14px;max-width:500px;line-height:1.7;font-family:'Outfit',sans-serif">
+    Para que os dados sejam compartilhados entre dispositivos, você precisa configurar o Firebase.<br><br>
+    <strong style="color:#E2E8F0">Como fazer:</strong><br>
+    1. Acesse <a href="https://console.firebase.google.com/" target="_blank" style="color:#4DAFFF">console.firebase.google.com</a><br>
+    2. Crie um projeto → Realtime Database → Criar banco<br>
+    3. Nas Regras, cole: <code style="background:#131825;padding:2px 8px;border-radius:4px;color:#FACC15">{"rules":{".read":true,".write":true}}</code><br>
+    4. Vá em Configurações do projeto → Seus apps → Configuração<br>
+    5. Substitua os valores em <code style="background:#131825;padding:2px 8px;border-radius:4px;color:#4DAFFF">FIREBASE_CONFIG</code> no HTML
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<script>
+// ================================================================
+// ⚙️  CONFIGURAÇÃO FIREBASE — substitua pelos dados do seu projeto
+// ================================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBcA1btL9EB69RhiPxwD8WiNoyzsVmlUDs",
+  authDomain: "hub-de-agentes-cdc06.firebaseapp.com",
+  databaseURL: "https://hub-de-agentes-cdc06-default-rtdb.firebaseio.com",
+  projectId: "hub-de-agentes-cdc06",
+  storageBucket: "hub-de-agentes-cdc06.firebasestorage.app",
+  messagingSenderId: "589005873207",
+  appId: "1:589005873207:web:16e670585b6a2f97495fb2"
+};
+
+// Verifica se foi configurado
+const isFirebaseConfigured = FIREBASE_CONFIG.apiKey !== "COLE_SUA_API_KEY_AQUI" && FIREBASE_CONFIG.databaseURL.indexOf("SEU-PROJETO") === -1;
+
+let db, agentsRef, requestsRef;
+
+if (isFirebaseConfigured) {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    agentsRef = db.ref('brasker/agents');
+    requestsRef = db.ref('brasker/requests');
+  } catch(e) {
+    console.error('Erro Firebase:', e);
+  }
+} else {
+  // Mostra overlay de erro de configuração
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('loading-overlay').style.display = 'none';
+    const errEl = document.getElementById('config-error-overlay');
+    errEl.style.display = 'flex';
+  });
+}
+
+// ================================================================.src = 'data:image/png;base64,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';
+
+const SECTORS = [
+  { id:"bpo", name:"BPO", icon:"🗂️", color:"#F59E0B", desc:"Business Process Outsourcing", gradient:"linear-gradient(135deg,#F59E0B 0%,#D97706 100%)" },
+  { id:"fiscal", name:"Fiscal", icon:"🧾", color:"#10B981", desc:"Departamento Fiscal", gradient:"linear-gradient(135deg,#10B981 0%,#059669 100%)" },
+  { id:"contabil", name:"Contábil", icon:"🧮", color:"#6366F1", desc:"Departamento Contábil", gradient:"linear-gradient(135deg,#6366F1 0%,#4F46E5 100%)" },
+  { id:"comercial", name:"Comercial", icon:"🎯", color:"#EC4899", desc:"Departamento Comercial", gradient:"linear-gradient(135deg,#EC4899 0%,#DB2777 100%)" },
+  { id:"societario", name:"Societário", icon:"🏛️", color:"#8B5CF6", desc:"Departamento Societário", gradient:"linear-gradient(135deg,#8B5CF6 0%,#7C3AED 100%)" },
+];
+
+const DEFAULT_AGENTS = [
+  { id:"a1", sector:"bpo", name:"Agente Triagem de E-mails", type:"agente", description:"Classifica e direciona e-mails recebidos automaticamente para os departamentos corretos, priorizando por urgência e assunto.", tags:["e-mail","triagem","automação"] },
+  { id:"a2", sector:"bpo", name:"Super Agente Onboarding", type:"super-agente", description:"Orquestra todo o processo de onboarding de novos clientes: coleta documentos, valida dados, configura acessos e envia boas-vindas.", tags:["onboarding","clientes","documentos"] },
+  { id:"a3", sector:"bpo", name:"Agente Controle de SLA", type:"agente", description:"Monitora prazos de SLA em tempo real, envia alertas de vencimento e gera relatórios de cumprimento para a gestão.", tags:["SLA","prazos","monitoramento"] },
+  { id:"a4", sector:"fiscal", name:"Agente Validador de NF-e", type:"agente", description:"Valida automaticamente notas fiscais eletrônicas recebidas, verificando CNPJ, valores, impostos e conformidade com a legislação vigente.", tags:["nota fiscal","validação","NF-e"] },
+  { id:"a5", sector:"fiscal", name:"Super Agente Apuração de Impostos", type:"super-agente", description:"Consolida dados de múltiplas fontes para calcular ICMS, PIS, COFINS e ISS. Gera guias de recolhimento e relatórios.", tags:["impostos","ICMS","PIS","COFINS","apuração"] },
+  { id:"a6", sector:"fiscal", name:"Agente SPED Fiscal", type:"agente", description:"Prepara e valida os arquivos do SPED Fiscal, cruzando informações de entrada e saída para garantir consistência.", tags:["SPED","fiscal","obrigação acessória"] },
+  { id:"a7", sector:"contabil", name:"Agente Conciliação Bancária", type:"agente", description:"Concilia automaticamente extratos bancários com lançamentos contábeis, identificando divergências e sugerindo correções.", tags:["conciliação","banco","extratos"] },
+  { id:"a8", sector:"contabil", name:"Super Agente Fechamento Contábil", type:"super-agente", description:"Orquestra todo o processo de fechamento mensal: verifica provisões, calcula depreciações, valida balancetes e gera demonstrações financeiras.", tags:["fechamento","balancete","demonstrações"] },
+  { id:"a9", sector:"contabil", name:"Agente Classificação de Lançamentos", type:"agente", description:"Classifica automaticamente lançamentos contábeis com base no histórico e na natureza da operação.", tags:["classificação","lançamentos","plano de contas"] },
+  { id:"a10", sector:"comercial", name:"Agente Qualificação de Leads", type:"agente", description:"Analisa e pontua leads recebidos com base em critérios predefinidos, priorizando os mais propensos à conversão.", tags:["leads","qualificação","vendas"] },
+  { id:"a11", sector:"comercial", name:"Super Agente Proposta Comercial", type:"super-agente", description:"Gera propostas comerciais personalizadas com base no perfil do cliente, histórico de compras e condições especiais.", tags:["proposta","precificação","clientes"] },
+  { id:"a12", sector:"comercial", name:"Agente Follow-up de Vendas", type:"agente", description:"Gerencia follow-ups automáticos com clientes em negociação, enviando lembretes personalizados e atualizando o CRM.", tags:["follow-up","CRM","negociação"] },
+  { id:"a13", sector:"societario", name:"Agente Controle de Atos Societários", type:"agente", description:"Monitora e organiza atos societários como alterações contratuais, atas de assembleia e registros na Junta Comercial, garantindo prazos e conformidade.", tags:["atos societários","junta comercial","contratos"] },
+  { id:"a14", sector:"societario", name:"Super Agente Constituição e Alteração", type:"super-agente", description:"Orquestra todo o fluxo de constituição e alteração de empresas: coleta documentos, valida dados cadastrais, gera minutas e acompanha o registro nos órgãos competentes.", tags:["constituição","alteração","CNPJ","registro"] },
+  { id:"a15", sector:"societario", name:"Agente Certidões e Compliance", type:"agente", description:"Automatiza a emissão e renovação de certidões negativas (CND, FGTS, Receita Federal) e alerta sobre vencimentos para manter a regularidade da empresa.", tags:["certidões","CND","compliance","regularidade"] },
+];
+
+let agents = [];
+let requests = [];
+let currentSector = null;
+let currentFilter = 'todos';
+let expandedAgent = null;
+let currentPriority = 'média';
+let newAgentType = 'agente';
+let adminTab = 'agents';
+let deleteTargetId = null;
+let currentView = 'home';
+
+function saveData() {
+  if (!isFirebaseConfigured || !agentsRef) return;
+  const agentsObj = {};
+  agents.forEach(a => { agentsObj[a.id] = a; });
+  agentsRef.set(agentsObj);
+  const requestsObj = {};
+  requests.forEach(r => { requestsObj[r.id] = r; });
+  requestsRef.set(requestsObj);
+}
+
+function refreshCurrentView() {
+  if (currentView === 'home') renderHome();
+  else if (currentView === 'sector') renderSector();
+  else if (currentView === 'admin') renderAdmin();
+}
+
+function navigate(view, sectorId) {
+  currentView = view;
+  document.querySelectorAll('.view-container').forEach(el => { el.classList.add('hidden'); el.classList.remove('active'); });
+  const viewMap = { home:'view-home', sector:'view-sector', request:'view-request', requestSuccess:'view-success', admin:'view-admin' };
+  const target = document.getElementById(viewMap[view]);
+  target.classList.remove('hidden');
+  setTimeout(() => target.classList.add('active'), 50);
+  if (view === 'home') renderHome();
+  if (view === 'sector') { currentSector = sectorId; currentFilter = 'todos'; expandedAgent = null; document.getElementById('search-input').value = ''; renderSector(); }
+  if (view === 'request') renderRequestForm();
+  if (view === 'admin') renderAdmin();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderHome() {
+  const superCount = agents.filter(a => a.type === 'super-agente').length;
+  document.getElementById('stats-bar').innerHTML = [
+    { label:'Agentes Ativos', value: agents.length },
+    { label:'Setores', value: SECTORS.length },
+    { label:'Super Agentes', value: superCount },
+    { label:'Solicitações', value: requests.length },
+  ].map(s => `<div style="text-align:center"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join('');
+
+  document.getElementById('sector-grid').innerHTML = SECTORS.map((s, i) => {
+    const count = agents.filter(a => a.sector === s.id).length;
+    return `<div class="sector-card card-hover anim-item" style="animation-delay:${i*0.1}s" onclick="navigate('sector','${s.id}')">
+        <div class="accent-bar" style="background:${s.gradient}"></div>
+        <div class="sector-icon" style="background:${s.color}18">${s.icon}</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:4px">${s.name}</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">${s.desc}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;font-family:var(--font-mono);color:${s.color};font-weight:600">${count} agente${count!==1?'s':''}</span>
+          <span style="font-size:20px;color:var(--text-dim)">→</span>
+        </div></div>`;
+  }).join('');
+}
+
+function renderSector() {
+  const s = SECTORS.find(x => x.id === currentSector);
+  if (!s) return;
+  document.getElementById('sector-breadcrumb').innerHTML = `<span style="color:${s.color}">${s.name}</span>`;
+  const total = agents.filter(a => a.sector === currentSector).length;
+  document.getElementById('sector-header').innerHTML = `
+    <div class="sector-icon" style="width:56px;height:56px;border-radius:14px;background:${s.color}18;font-size:28px">${s.icon}</div>
+    <div><h2 style="font-size:28px;font-weight:800">${s.name}</h2>
+    <div style="color:var(--text-muted);font-size:14px">${s.desc} • <span style="color:${s.color};font-weight:600">${total} agentes</span></div></div>`;
+  document.getElementById('filter-group').innerHTML = ['todos','agente','super-agente'].map(t => {
+    const label = t === 'todos' ? 'Todos' : t === 'agente' ? 'Agentes' : 'Super Agentes';
+    const isActive = currentFilter === t;
+    return `<button class="filter-btn" style="border-color:${isActive?s.color:'var(--border)'};background:${isActive?s.color+'15':'transparent'};color:${isActive?s.color:'var(--text-muted)'}" onclick="currentFilter='${t}';renderSector()">${label}</button>`;
+  }).join('');
+  renderAgents();
+}
+
+function renderAgents() {
+  const s = SECTORS.find(x => x.id === currentSector);
+  const q = (document.getElementById('search-input').value || '').toLowerCase();
+  const filtered = agents.filter(a => a.sector === currentSector).filter(a => currentFilter === 'todos' || a.type === currentFilter).filter(a => {
+    if (!q) return true;
+    return a.name.toLowerCase().includes(q) || a.description.toLowerCase().includes(q) || a.tags.some(t => t.toLowerCase().includes(q));
+  });
+  const list = document.getElementById('agent-list');
+  if (!filtered.length) {
+    list.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-dim)"><div style="font-size:40px;margin-bottom:12px">🤷</div><div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-muted)">Nenhum agente encontrado</div><div style="font-size:14px;margin-bottom:20px">${q?'Sem resultados para "'+q+'".':'Não há agentes nesta categoria.'}</div><button class="btn-primary" onclick="navigate('request')">Solicitar Agente</button></div>`;
+    return;
+  }
+  list.innerHTML = filtered.map((agent, i) => {
+    const isExp = expandedAgent === agent.id;
+    const isSuperAgent = agent.type === 'super-agente';
+    const typeColor = isSuperAgent ? 'var(--yellow)' : s.color;
+    const typeBg = isSuperAgent ? 'var(--yellow-glow)' : s.color + '15';
+    const typeIcon = isSuperAgent ? '⚡' : '●';
+    const typeLabel = isSuperAgent ? 'Super Agente' : 'Agente';
+    const tagsHtml = isExp ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;animation:fadeIn 0.3s ease">${agent.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : '';
+    return `<div class="agent-card anim-item" style="animation-delay:${i*0.06}s;border-color:${isExp?s.color+'55':'var(--border)'}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px;cursor:pointer" onclick="expandedAgent=expandedAgent==='${agent.id}'?null:'${agent.id}';renderAgents()">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+            <h3 style="font-size:17px;font-weight:700">${agent.name}</h3>
+            <span class="type-badge" style="background:${typeBg};color:${typeColor}">${typeIcon} ${typeLabel}</span>
+          </div>
+          <p style="font-size:14px;color:var(--text-muted);line-height:1.6">${agent.description}</p>${tagsHtml}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-danger" onclick="event.stopPropagation();deleteAgent('${agent.id}','${agent.name.replace(/['"]/g,'')}')">🗑️</button>
+          <div style="font-size:18px;color:var(--text-dim);transform:rotate(${isExp?90:0}deg);transition:transform 0.2s;cursor:pointer" onclick="expandedAgent=expandedAgent==='${agent.id}'?null:'${agent.id}';renderAgents()">›</div>
+        </div>
+      </div></div>`;
+  }).join('');
+}
+
+
+function deleteAgent(id, name) {
+  if (!confirm('Excluir "' + name + '" definitivamente? Esta ação não pode ser desfeita.')) return;
+  agents = agents.filter(a => a.id !== id);
+  if (isFirebaseConfigured && agentsRef) { agentsRef.child(id).remove(); } else { saveData(); }
+  renderSector();
+}
+
+function renderRequestForm() {
+  const select = document.getElementById('req-sector');
+  select.innerHTML = '<option value="">Selecione seu setor</option>' + SECTORS.map(s => `<option value="${s.id}">${s.icon} ${s.name} — ${s.desc}</option>`).join('');
+  document.getElementById('req-name').value = '';
+  document.getElementById('req-desc').value = '';
+  select.value = '';
+  currentPriority = 'média';
+  document.getElementById('form-error').classList.add('hidden');
+  renderPriorities();
+}
+
+function renderPriorities() {
+  const colors = { baixa:'var(--text-muted)', média:'var(--blue)', alta:'var(--bpo-color)', urgente:'var(--danger)' };
+  document.getElementById('priority-group').innerHTML = ['baixa','média','alta','urgente'].map(p => {
+    const isActive = currentPriority === p;
+    return `<button class="priority-btn" style="border-color:${isActive?colors[p]:'var(--border)'};background:${isActive?colors[p]+'15':'transparent'};color:${isActive?colors[p]:'var(--text-dim)'}" onclick="currentPriority='${p}';renderPriorities()">${p}</button>`;
+  }).join('');
+}
+
+function submitRequest() {
+  const name = document.getElementById('req-name').value.trim();
+  const sector = document.getElementById('req-sector').value;
+  const desc = document.getElementById('req-desc').value.trim();
+  const errEl = document.getElementById('form-error');
+  if (!name || !sector || !desc) { errEl.textContent = 'Preencha todos os campos obrigatórios.'; errEl.classList.remove('hidden'); return; }
+  const newReq = { id:'req-'+Date.now(), name, sector, description:desc, priority:currentPriority, date:new Date().toISOString(), status:'pendente' };
+  requests.unshift(newReq);
+  if (isFirebaseConfigured && requestsRef) { requestsRef.child(newReq.id).set(newReq); } else { saveData(); }
+  navigate('requestSuccess');
+}
+
+function switchAdminTab(tab) {
+  adminTab = tab;
+  const tabAgents = document.getElementById('tab-agents');
+  const tabRequests = document.getElementById('tab-requests');
+  const listAgents = document.getElementById('admin-agents-list');
+  const listRequests = document.getElementById('admin-requests-list');
+  if (tab === 'agents') {
+    tabAgents.style.cssText = 'border-color:var(--blue);color:var(--blue);background:var(--accent-glow);padding:10px 16px;border-radius:10px;border-width:1.5px;border-style:solid;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--font)';
+    tabRequests.style.cssText = 'border-color:var(--border);color:var(--text-muted);background:transparent;padding:10px 16px;border-radius:10px;border-width:1.5px;border-style:solid;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--font)';
+    listAgents.classList.remove('hidden'); listRequests.classList.add('hidden');
+  } else {
+    tabRequests.style.cssText = 'border-color:var(--blue);color:var(--blue);background:var(--accent-glow);padding:10px 16px;border-radius:10px;border-width:1.5px;border-style:solid;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--font)';
+    tabAgents.style.cssText = 'border-color:var(--border);color:var(--text-muted);background:transparent;padding:10px 16px;border-radius:10px;border-width:1.5px;border-style:solid;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--font)';
+    listRequests.classList.remove('hidden'); listAgents.classList.add('hidden');
+  }
+  renderAdmin();
+}
+
+function renderAdmin() { renderAdminAgents(); renderAdminRequests(); }
+
+function renderAdminAgents() {
+  const list = document.getElementById('admin-agents-list');
+  if (!agents.length) {
+    list.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-dim)"><div style="font-size:40px;margin-bottom:12px">🤖</div><div style="font-size:16px;font-weight:600;color:var(--text-muted)">Nenhum agente cadastrado</div></div>`;
+    return;
+  }
+  list.innerHTML = SECTORS.map(s => {
+    const sa = agents.filter(a => a.sector === s.id);
+    if (!sa.length) return '';
+    return `<div style="margin-bottom:8px"><div style="font-size:14px;font-weight:700;color:${s.color};margin-bottom:8px;display:flex;align-items:center;gap:8px">${s.icon} ${s.name} <span style="font-size:12px;color:var(--text-dim);font-weight:500">(${sa.length})</span></div>
+    ${sa.map((agent, i) => {
+      const isSA = agent.type === 'super-agente';
+      const tc = isSA ? 'var(--yellow)' : s.color;
+      const tb = isSA ? 'var(--yellow-glow)' : s.color + '15';
+      const tl = isSA ? '⚡ Super Agente' : '● Agente';
+      return `<div class="anim-item" style="animation-delay:${i*0.04}s;background:var(--surface);border-radius:12px;border:1px solid var(--border);padding:16px 20px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-weight:700;font-size:15px">${agent.name}</span>
+            <span class="type-badge" style="background:${tb};color:${tc};font-size:10px">${tl}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-dim);line-height:1.5">${agent.description.substring(0,120)}${agent.description.length>120?'...':''}</div>
+        </div>
+        <button class="btn-danger" onclick="event.stopPropagation();openDeleteModal('${agent.id}','${agent.name.replace(/'/g,"\\'")}')">Excluir</button>
+      </div>`;
+    }).join('')}</div>`;
+  }).join('');
+}
+
+function renderAdminRequests() {
+  const list = document.getElementById('admin-requests-list');
+  if (!requests.length) {
+    list.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-dim)"><div style="font-size:40px;margin-bottom:12px">📭</div><div style="font-size:16px;font-weight:600;color:var(--text-muted)">Nenhuma solicitação ainda</div></div>`;
+    return;
+  }
+  const pc = { baixa:'var(--text-muted)', média:'var(--blue)', alta:'var(--bpo-color)', urgente:'var(--danger)' };
+  const sc = { pendente:'#F59E0B', 'em análise':'#6366F1', aprovado:'#10B981', recusado:'#EF4444' };
+  list.innerHTML = requests.map((req, i) => {
+    const sector = SECTORS.find(s => s.id === req.sector);
+    return `<div class="anim-item" style="animation-delay:${i*0.06}s;background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <div><div style="font-weight:700;font-size:15px;margin-bottom:4px">${req.name}</div>
+        <div style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono)">${new Date(req.date).toLocaleDateString('pt-BR')} • ${sector?sector.icon+' '+sector.name:req.sector}</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;text-transform:uppercase;background:${pc[req.priority]}18;color:${pc[req.priority]}">${req.priority}</span>
+          <select class="req-status-select" style="color:${sc[req.status]}" onchange="updateStatus('${req.id}',this.value)">
+            <option value="pendente" ${req.status==='pendente'?'selected':''}>⏳ Pendente</option>
+            <option value="em análise" ${req.status==='em análise'?'selected':''}>🔍 Em Análise</option>
+            <option value="aprovado" ${req.status==='aprovado'?'selected':''}>✅ Aprovado</option>
+            <option value="recusado" ${req.status==='recusado'?'selected':''}>❌ Recusado</option>
+          </select>
+          <button class="btn-danger" onclick="deleteRequest('${req.id}')" title="Excluir solicitação" style="padding:6px 10px;font-size:13px">🗑️</button>
+          </div></div>
+      <p style="font-size:14px;color:var(--text-muted);line-height:1.6">${req.description}</p></div>`;
+  }).join('');
+}
+
+function updateStatus(id, status) {
+  requests = requests.map(r => r.id === id ? {...r, status} : r);
+  if (isFirebaseConfigured && requestsRef) { requestsRef.child(id).update({ status }); } else { saveData(); }
+  renderAdminRequests();
+}
+
+function deleteRequest(id) {
+  if (!confirm('Excluir esta solicitação definitivamente?')) return;
+  requests = requests.filter(r => r.id !== id);
+  if (isFirebaseConfigured && requestsRef) { requestsRef.child(id).remove(); } else { saveData(); }
+  renderAdminRequests();
+}
+
+function openAddAgentModal() {
+  document.getElementById('add-agent-modal').classList.remove('hidden');
+  document.getElementById('add-agent-name').value = '';
+  document.getElementById('add-agent-desc').value = '';
+  document.getElementById('add-agent-tags').value = '';
+  const sel = document.getElementById('add-agent-sector');
+  sel.innerHTML = '<option value="">Selecione o setor</option>' + SECTORS.map(s => `<option value="${s.id}">${s.icon} ${s.name}</option>`).join('');
+  sel.value = '';
+  newAgentType = 'agente';
+  selectAgentType('agente');
+  document.getElementById('add-agent-error').classList.add('hidden');
+}
+function closeAddAgentModal() { document.getElementById('add-agent-modal').classList.add('hidden'); }
+
+function selectAgentType(type) {
+  newAgentType = type;
+  const btnA = document.getElementById('type-agente');
+  const btnS = document.getElementById('type-super-agente');
+  if (type === 'agente') {
+    btnA.style.borderColor = 'var(--blue)'; btnA.style.color = 'var(--blue)'; btnA.style.background = 'var(--accent-glow)';
+    btnS.style.borderColor = 'var(--border)'; btnS.style.color = 'var(--text-muted)'; btnS.style.background = 'transparent';
+  } else {
+    btnS.style.borderColor = 'var(--yellow)'; btnS.style.color = 'var(--yellow)'; btnS.style.background = 'var(--yellow-glow)';
+    btnA.style.borderColor = 'var(--border)'; btnA.style.color = 'var(--text-muted)'; btnA.style.background = 'transparent';
+  }
+}
+
+function saveNewAgent() {
+  const name = document.getElementById('add-agent-name').value.trim();
+  const sector = document.getElementById('add-agent-sector').value;
+  const desc = document.getElementById('add-agent-desc').value.trim();
+  const tagsRaw = document.getElementById('add-agent-tags').value.trim();
+  const errEl = document.getElementById('add-agent-error');
+  if (!name || !sector || !desc) { errEl.textContent = 'Preencha nome, setor e descrição.'; errEl.classList.remove('hidden'); return; }
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+  const newAgent = { id: 'ag-'+Date.now(), sector, name, type: newAgentType, description: desc, tags };
+  agents.push(newAgent);
+  if (isFirebaseConfigured && agentsRef) { agentsRef.child(newAgent.id).set(newAgent); } else { saveData(); }
+  closeAddAgentModal(); renderAdmin();
+}
+
+function openDeleteModal(id, name) {
+  deleteTargetId = id;
+  document.getElementById('delete-agent-name').textContent = 'Tem certeza que deseja excluir "' + name + '"? Esta ação não pode ser desfeita.';
+  document.getElementById('delete-modal').classList.remove('hidden');
+}
+function closeDeleteModal() { document.getElementById('delete-modal').classList.add('hidden'); deleteTargetId = null; }
+function confirmDelete() {
+  if (deleteTargetId) {
+    const id = deleteTargetId;
+    agents = agents.filter(a => a.id !== id);
+    if (isFirebaseConfigured && agentsRef) { agentsRef.child(id).remove(); } else { saveData(); }
+    closeDeleteModal(); renderAdmin();
+  }
+}
+
+// ================================================================
+// INICIALIZAÇÃO: carrega dados do Firebase e inicia o app
+// ================================================================
+if (isFirebaseConfigured && agentsRef) {
+  let agentsLoaded = false;
+  let requestsLoaded = false;
+  let appStarted = false;
+
+  function tryStartApp() {
+    if (agentsLoaded && requestsLoaded && !appStarted) {
+      appStarted = true;
+      document.getElementById('loading-overlay').style.display = 'none';
+      navigate('home');
+    }
+  }
+
+  // Listener de agentes — atualiza em tempo real para todos os dispositivos
+  agentsRef.on('value', function(snapshot) {
+    const data = snapshot.val();
+    if (data) {
+      agents = Object.values(data);
+    } else {
+      // Primeira execução: popula com agentes padrão
+      agents = [...DEFAULT_AGENTS];
+      const obj = {};
+      agents.forEach(function(a) { obj[a.id] = a; });
+      agentsRef.set(obj);
+    }
+    agentsLoaded = true;
+    tryStartApp();
+    if (appStarted) refreshCurrentView();
+  }, function(error) {
+    console.error('Erro ao carregar agentes:', error);
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('config-error-overlay').style.display = 'flex';
+  });
+
+  // Listener de solicitações — atualiza em tempo real para todos os dispositivos
+  requestsRef.on('value', function(snapshot) {
+    const data = snapshot.val();
+    requests = data
+      ? Object.values(data).sort(function(a, b) { return new Date(b.date) - new Date(a.date); })
+      : [];
+    requestsLoaded = true;
+    tryStartApp();
+    if (appStarted) refreshCurrentView();
+  }, function(error) {
+    console.error('Erro ao carregar solicitações:', error);
+  });
+
+  // Timeout de segurança: se Firebase não responder em 8s, mostra erro
+  setTimeout(function() {
+    if (!appStarted) {
+      document.getElementById('loading-overlay').style.display = 'none';
+      document.getElementById('config-error-overlay').style.display = 'flex';
+    }
+  }, 8000);
+
+} else if (!isFirebaseConfigured) {
+  // Firebase não configurado — já foi tratado acima
+}
+</script>
+</body>
+</html>

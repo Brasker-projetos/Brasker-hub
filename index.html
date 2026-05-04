@@ -771,44 +771,51 @@ if (isFirebaseConfigured && agentsRef) {
     }
   }
 
-  // Listener de agentes — atualiza em tempo real para todos os dispositivos
-  // IMPORTANTE: usa flag 'initialized' no Firebase para garantir que DEFAULT_AGENTS
-  // só sejam populados na PRIMEIRA execução. Se o usuário apagar todos, eles NÃO voltam.
-  agentsRef.on('value', function(snapshot) {
-    const data = snapshot.val();
-    if (data) {
-      agents = Object.values(data);
-      // Garante que a flag esteja setada quando já existirem dados (cobre transição
-      // de bancos antigos que foram criados antes desta lógica existir).
-      initFlagRef.once('value', function(flagSnap) {
-        if (flagSnap.val() !== true) initFlagRef.set(true);
-      });
+  // ============================================================
+  // SETUP DE AGENTES — sequencial e à prova de race condition.
+  // Passo 1: lê flag 'initialized' UMA VEZ.
+  // Passo 2: se não inicializado, decide o que fazer (popular ou só marcar flag)
+  //          e ESPERA confirmação antes de continuar.
+  // Passo 3: só então ativa o listener que apenas sincroniza,
+  //          sem nunca mais repopular DEFAULT_AGENTS.
+  // ============================================================
+  function attachAgentsListener() {
+    agentsRef.on('value', function(snapshot) {
+      const data = snapshot.val();
+      agents = data ? Object.values(data) : [];
       agentsLoaded = true;
       tryStartApp();
       if (appStarted) refreshCurrentView();
-    } else {
-      // Banco vazio: verifica se é primeira execução (sem flag) ou se o usuário apagou tudo
-      initFlagRef.once('value', function(flagSnap) {
-        if (flagSnap.val() === true) {
-          // Já foi inicializado antes; usuário apagou tudo — manter vazio
-          agents = [];
-        } else {
-          // Primeira execução real: popula com agentes padrão e marca flag
-          agents = [...DEFAULT_AGENTS];
-          const obj = {};
-          agents.forEach(function(a) { obj[a.id] = a; });
-          agentsRef.set(obj);
-          initFlagRef.set(true);
-        }
-        agentsLoaded = true;
-        tryStartApp();
-        if (appStarted) refreshCurrentView();
-      });
+    }, function(error) {
+      console.error('Erro ao carregar agentes:', error);
+      document.getElementById('loading-overlay').style.display = 'none';
+      document.getElementById('config-error-overlay').style.display = 'flex';
+    });
+  }
+
+  initFlagRef.once('value', function(flagSnap) {
+    if (flagSnap.val() === true) {
+      // Já inicializado antes — apenas escuta. NUNCA repopula.
+      attachAgentsListener();
+      return;
     }
-  }, function(error) {
-    console.error('Erro ao carregar agentes:', error);
-    document.getElementById('loading-overlay').style.display = 'none';
-    document.getElementById('config-error-overlay').style.display = 'flex';
+    // Não inicializado ainda: olha o estado atual de agents
+    agentsRef.once('value', function(snap) {
+      const data = snap.val();
+      if (data) {
+        // Banco antigo já tinha agentes — apenas marca como inicializado
+        // e ESPERA confirmação do servidor antes de ligar o listener.
+        initFlagRef.set(true, function() { attachAgentsListener(); });
+      } else {
+        // Banco totalmente vazio na primeira execução real — popula default,
+        // marca flag e só então ativa listener (encadeado para garantir ordem).
+        const defaultObj = {};
+        DEFAULT_AGENTS.forEach(function(a) { defaultObj[a.id] = a; });
+        agentsRef.set(defaultObj, function() {
+          initFlagRef.set(true, function() { attachAgentsListener(); });
+        });
+      }
+    });
   });
 
   // Listener de solicitações — atualiza em tempo real para todos os dispositivos

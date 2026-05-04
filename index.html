@@ -778,6 +778,11 @@ if (isFirebaseConfigured && agentsRef) {
     const data = snapshot.val();
     if (data) {
       agents = Object.values(data);
+      // Garante que a flag esteja setada quando já existirem dados (cobre transição
+      // de bancos antigos que foram criados antes desta lógica existir).
+      initFlagRef.once('value', function(flagSnap) {
+        if (flagSnap.val() !== true) initFlagRef.set(true);
+      });
       agentsLoaded = true;
       tryStartApp();
       if (appStarted) refreshCurrentView();

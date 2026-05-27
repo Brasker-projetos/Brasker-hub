@@ -257,6 +257,24 @@
   </div>
 </div>
 
+<!-- MODAL EDIT REQUEST -->
+<div id="edit-request-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeEditRequestModal()">
+  <div class="modal-box">
+    <h3 style="font-size:20px;font-weight:700;margin-bottom:20px">Editar Solicitação</h3>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Nome do Agente *</label><input class="input-style" id="edit-req-name"></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Setor *</label><select class="input-style" id="edit-req-sector" style="cursor:pointer"></select></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Descrição *</label><textarea class="input-style" id="edit-req-desc" rows="4" style="resize:vertical;min-height:100px"></textarea></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Prioridade *</label><div id="edit-priority-group" style="display:flex;gap:8px;flex-wrap:wrap"></div></div>
+      <div id="edit-req-error" class="hidden" style="padding:12px 16px;border-radius:10px;background:rgba(239,68,68,0.1);color:var(--danger);font-size:13px;font-weight:500"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn-ghost" onclick="closeEditRequestModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveEditedRequest()">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- DELETE / CONFIRM MODAL (genérico) -->
 <div id="delete-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeDeleteModal()">
   <div class="modal-box" style="max-width:400px;text-align:center">
@@ -614,6 +632,7 @@ function renderAdminRequests() {
             <option value="recusado" ${req.status==='recusado'?'selected':''}>❌ Recusado</option>
           </select>
           ${registerBtn}
+          <button onclick="openEditRequestModal('${req.id}')" title="Editar solicitação" style="padding:6px 10px;font-size:13px;border-radius:8px;border:1.5px solid var(--blue);background:var(--accent-glow);color:var(--blue);font-weight:600;font-family:var(--font);cursor:pointer">✏️</button>
           <button class="btn-danger" onclick="deleteRequest('${req.id}')" title="Excluir solicitação" style="padding:6px 10px;font-size:13px">🗑️</button>
           </div></div>
       <p style="font-size:14px;color:var(--text-muted);line-height:1.6">${req.description}</p></div>`;
@@ -640,6 +659,51 @@ function deleteRequest(id) {
       renderAdminRequests();
     }
   });
+}
+
+let editingRequestId = null;
+let editingPriority = 'média';
+
+function openEditRequestModal(id) {
+  const req = requests.find(r => r.id === id);
+  if (!req) return;
+  editingRequestId = id;
+  editingPriority = req.priority || 'média';
+  const select = document.getElementById('edit-req-sector');
+  select.innerHTML = SECTORS.map(s => `<option value="${s.id}">${s.icon} ${s.name} — ${s.desc}</option>`).join('');
+  document.getElementById('edit-req-name').value = req.name || '';
+  select.value = req.sector || '';
+  document.getElementById('edit-req-desc').value = req.description || '';
+  document.getElementById('edit-req-error').classList.add('hidden');
+  renderEditPriorities();
+  document.getElementById('edit-request-modal').classList.remove('hidden');
+}
+
+function renderEditPriorities() {
+  const colors = { baixa:'var(--text-muted)', média:'var(--blue)', alta:'var(--bpo-color)', urgente:'var(--danger)' };
+  document.getElementById('edit-priority-group').innerHTML = ['baixa','média','alta','urgente'].map(p => {
+    const isActive = editingPriority === p;
+    return `<button class="priority-btn" style="border-color:${isActive?colors[p]:'var(--border)'};background:${isActive?colors[p]+'15':'transparent'};color:${isActive?colors[p]:'var(--text-dim)'}" onclick="editingPriority='${p}';renderEditPriorities()">${p}</button>`;
+  }).join('');
+}
+
+function closeEditRequestModal() {
+  document.getElementById('edit-request-modal').classList.add('hidden');
+  editingRequestId = null;
+}
+
+function saveEditedRequest() {
+  if (!editingRequestId) return;
+  const name = document.getElementById('edit-req-name').value.trim();
+  const sector = document.getElementById('edit-req-sector').value;
+  const desc = document.getElementById('edit-req-desc').value.trim();
+  const errEl = document.getElementById('edit-req-error');
+  if (!name || !sector || !desc) { errEl.textContent = 'Preencha todos os campos obrigatórios.'; errEl.classList.remove('hidden'); return; }
+  const updates = { name, sector, description:desc, priority:editingPriority };
+  requests = requests.map(r => r.id === editingRequestId ? {...r, ...updates} : r);
+  if (isFirebaseConfigured && requestsRef) { requestsRef.child(editingRequestId).update(updates); } else { saveData(); }
+  closeEditRequestModal();
+  renderAdminRequests();
 }
 
 function openAddAgentModal() {

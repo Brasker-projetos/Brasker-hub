@@ -417,7 +417,23 @@ function refreshCurrentView() {
   else if (currentView === 'admin') renderAdmin();
 }
 
+// ================================================================
+// Trava do Painel Administrativo — só quem tem a senha cadastra/edita/exclui.
+// Observação: é um impedimento prático (não criptográfico). Para bloqueio
+// real, é preciso autenticação no Firebase — ver conversa.
+// ================================================================
+const ADMIN_PASSWORD = "Brasker#Hub2026";
+function isAdminUnlocked() { return sessionStorage.getItem('brasker_admin') === '1'; }
+function unlockAdmin() {
+  const p = prompt('Senha do Painel Administrativo:');
+  if (p === null) return false;
+  if (p === ADMIN_PASSWORD) { sessionStorage.setItem('brasker_admin', '1'); return true; }
+  alert('Senha incorreta.');
+  return false;
+}
+
 function navigate(view, sectorId) {
+  if (view === 'admin' && !isAdminUnlocked() && !unlockAdmin()) return;
   currentView = view;
   document.querySelectorAll('.view-container').forEach(el => { el.classList.add('hidden'); el.classList.remove('active'); });
   const viewMap = { home:'view-home', sector:'view-sector', request:'view-request', requestSuccess:'view-success', admin:'view-admin' };
@@ -534,7 +550,6 @@ function renderAgents() {
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${accessBtn}
-          <button class="btn-danger" onclick="event.stopPropagation();deleteAgent('${agent.id}','${agent.name.replace(/['"]/g,'')}')">🗑️</button>
           <div style="font-size:18px;color:var(--text-dim);transform:rotate(${isExp?90:0}deg);transition:transform 0.2s;cursor:pointer" onclick="expandedAgent=expandedAgent==='${agent.id}'?null:'${agent.id}';renderAgents()">›</div>
         </div>
       </div></div>`;

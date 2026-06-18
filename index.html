@@ -461,7 +461,10 @@ function renderHome() {
   const banner = document.getElementById('global-banner');
   if (globalAgents.length) {
     banner.innerHTML = `
-      <div style="font-size:13px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;font-family:var(--font-mono)">🏢 Para toda a empresa</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <span style="font-size:40px;line-height:1;filter:drop-shadow(0 2px 8px rgba(77,175,255,0.45))">🏢</span>
+        <span style="font-size:18px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:2px;font-family:var(--font-mono)">Para toda a empresa</span>
+      </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
         ${globalAgents.map(a => {
           const hasUrl = a.url && a.url.trim();

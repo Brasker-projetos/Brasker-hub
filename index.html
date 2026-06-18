@@ -249,6 +249,7 @@
       <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Setor *</label><select class="input-style" id="add-agent-sector" style="cursor:pointer"><option value="">Selecione o setor</option></select></div>
       <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Descrição *</label><textarea class="input-style" id="add-agent-desc" rows="4" placeholder="Descreva o que este agente faz..." style="resize:vertical;min-height:100px"></textarea></div>
       <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Link de acesso (URL)</label><input class="input-style" id="add-agent-url" placeholder="https://... (deixe em branco se ainda não tem)"></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Como acionar (opcional)</label><input class="input-style" id="add-agent-acionamento" placeholder="Ex: Roda automático no check-in · Solicite pelo WhatsApp do setor"></div>
       <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Tags (separadas por vírgula)</label><input class="input-style" id="add-agent-tags" placeholder="Ex: conciliação, banco, extratos"></div>
       <div id="add-agent-error" class="hidden" style="padding:12px 16px;border-radius:10px;background:rgba(239,68,68,0.1);color:var(--danger);font-size:13px;font-weight:500"></div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -453,7 +454,8 @@ function renderHome() {
               <h3 style="font-size:18px;font-weight:700">${a.name}</h3>
               <span class="type-badge" style="background:var(--accent-glow);color:var(--blue)">★ Corporativo</span>
             </div>
-            <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin-bottom:16px">${a.description}</p>
+            <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin-bottom:${a.acionamento&&a.acionamento.trim()?'10px':'16px'}">${a.description}</p>
+            ${a.acionamento && a.acionamento.trim() ? `<div style="font-size:13px;color:var(--text-muted);background:var(--surface-hover);border-left:3px solid var(--lilac);padding:8px 12px;border-radius:8px;margin-bottom:16px"><span style="color:var(--lilac);font-weight:600">⚙️ Como acionar:</span> ${a.acionamento.trim()}</div>` : ''}
             ${hasUrl ? `<button class="btn-primary" style="padding:10px 22px;font-size:14px" onclick="event.stopPropagation();openAgentUrl('${encodeURIComponent(a.url.trim())}')">Acessar ↗</button>` : `<span style="font-size:13px;color:var(--text-dim)">Em breve</span>`}
           </div>`;
         }).join('')}
@@ -519,6 +521,7 @@ function renderAgents() {
     }
     const hasUrl = agent.url && agent.url.trim();
     const accessBtn = hasUrl ? `<button class="btn-primary" style="padding:9px 20px;font-size:13px" onclick="event.stopPropagation();openAgentUrl('${encodeURIComponent(agent.url.trim())}')">Acessar ↗</button>` : '';
+    const acionHtml = agent.acionamento && agent.acionamento.trim() ? `<div style="margin-top:10px;font-size:13px;color:var(--text-muted);background:var(--surface-hover);border-left:3px solid var(--lilac);padding:8px 12px;border-radius:8px"><span style="color:var(--lilac);font-weight:600">⚙️ Como acionar:</span> ${agent.acionamento.trim()}</div>` : '';
     const tagsHtml = isExp ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;animation:fadeIn 0.3s ease">${agent.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : '';
     return `<div class="agent-card anim-item" style="animation-delay:${i*0.06}s;border-color:${isExp?s.color+'55':'var(--border)'}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
@@ -527,7 +530,7 @@ function renderAgents() {
             <h3 style="font-size:17px;font-weight:700">${agent.name}</h3>
             <span class="type-badge" style="background:${typeBg};color:${typeColor}">${typeIcon} ${typeLabel}</span>
           </div>
-          <p style="font-size:14px;color:var(--text-muted);line-height:1.6">${agent.description}</p>${tagsHtml}
+          <p style="font-size:14px;color:var(--text-muted);line-height:1.6">${agent.description}</p>${acionHtml}${tagsHtml}
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${accessBtn}
@@ -753,6 +756,7 @@ function openAddAgentModal() {
   document.getElementById('add-agent-name').value = '';
   document.getElementById('add-agent-desc').value = '';
   document.getElementById('add-agent-url').value = '';
+  document.getElementById('add-agent-acionamento').value = '';
   document.getElementById('add-agent-tags').value = '';
   const sel = document.getElementById('add-agent-sector');
   sel.innerHTML = '<option value="">Selecione o setor</option>' + SECTORS.map(s => `<option value="${s.id}">${s.icon} ${s.name}</option>`).join('');
@@ -775,6 +779,7 @@ function openEditAgentModal(id) {
   document.getElementById('add-agent-name').value = agent.name || '';
   document.getElementById('add-agent-desc').value = agent.description || '';
   document.getElementById('add-agent-url').value = agent.url || '';
+  document.getElementById('add-agent-acionamento').value = agent.acionamento || '';
   document.getElementById('add-agent-tags').value = (agent.tags || []).join(', ');
   document.getElementById('add-agent-sector').value = agent.sector || '';
   newAgentType = agent.type || 'agente';
@@ -822,19 +827,20 @@ function saveNewAgent() {
   const sector = document.getElementById('add-agent-sector').value;
   const desc = document.getElementById('add-agent-desc').value.trim();
   const url = document.getElementById('add-agent-url').value.trim();
+  const acionamento = document.getElementById('add-agent-acionamento').value.trim();
   const tagsRaw = document.getElementById('add-agent-tags').value.trim();
   const errEl = document.getElementById('add-agent-error');
   if (!name || !sector || !desc) { errEl.textContent = 'Preencha nome, setor e descrição.'; errEl.classList.remove('hidden'); return; }
   if (url && !/^https?:\/\//i.test(url)) { errEl.textContent = 'O link deve começar com http:// ou https://'; errEl.classList.remove('hidden'); return; }
   const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
   if (editingAgentId) {
-    const updated = { id: editingAgentId, sector, name, type: newAgentType, description: desc, url, tags };
+    const updated = { id: editingAgentId, sector, name, type: newAgentType, description: desc, url, acionamento, tags };
     agents = agents.map(a => a.id === editingAgentId ? updated : a);
     if (isFirebaseConfigured && agentsRef) { agentsRef.child(editingAgentId).set(updated); } else { saveData(); }
     closeAddAgentModal(); renderAdmin();
     return;
   }
-  const newAgent = { id: 'ag-'+Date.now(), sector, name, type: newAgentType, description: desc, url, tags };
+  const newAgent = { id: 'ag-'+Date.now(), sector, name, type: newAgentType, description: desc, url, acionamento, tags };
   agents.push(newAgent);
   if (isFirebaseConfigured && agentsRef) { agentsRef.child(newAgent.id).set(newAgent); } else { saveData(); }
   // Se veio de uma solicitação aprovada, marca como cadastrada

@@ -157,6 +157,7 @@
       </p>
     </div>
     <div class="stats-bar" id="stats-bar"></div>
+    <div id="global-banner" style="margin-bottom:40px"></div>
     <div class="sector-grid" id="sector-grid"></div>
     <div class="cta-box">
       <div style="font-size:22px;margin-bottom:6px">🔍</div>
@@ -235,7 +236,7 @@
 <!-- MODAL ADD AGENT -->
 <div id="add-agent-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeAddAgentModal()">
   <div class="modal-box">
-    <h3 style="font-size:20px;font-weight:700;margin-bottom:20px">Cadastrar Novo Agente</h3>
+    <h3 id="add-agent-title" style="font-size:20px;font-weight:700;margin-bottom:20px">Cadastrar Novo Agente</h3>
     <div style="display:flex;flex-direction:column;gap:16px">
       <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Nome do Agente *</label><input class="input-style" id="add-agent-name" placeholder="Ex: Agente Conciliação Bancária"></div>
       <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Tipo *</label>
@@ -247,6 +248,7 @@
       </div>
       <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Setor *</label><select class="input-style" id="add-agent-sector" style="cursor:pointer"><option value="">Selecione o setor</option></select></div>
       <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Descrição *</label><textarea class="input-style" id="add-agent-desc" rows="4" placeholder="Descreva o que este agente faz..." style="resize:vertical;min-height:100px"></textarea></div>
+      <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Link de acesso (URL)</label><input class="input-style" id="add-agent-url" placeholder="https://... (deixe em branco se ainda não tem)"></div>
       <div><label style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block">Tags (separadas por vírgula)</label><input class="input-style" id="add-agent-tags" placeholder="Ex: conciliação, banco, extratos"></div>
       <div id="add-agent-error" class="hidden" style="padding:12px 16px;border-radius:10px;background:rgba(239,68,68,0.1);color:var(--danger);font-size:13px;font-weight:500"></div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -363,7 +365,10 @@ const SECTORS = [
   { id:"comercial", name:"Comercial", icon:"🎯", color:"#EC4899", desc:"Departamento Comercial", gradient:"linear-gradient(135deg,#EC4899 0%,#DB2777 100%)" },
   { id:"societario", name:"Societário", icon:"🏛️", color:"#8B5CF6", desc:"Departamento Societário", gradient:"linear-gradient(135deg,#8B5CF6 0%,#7C3AED 100%)" },
   { id:"pessoal", name:"Pessoal", icon:"👥", color:"#06B6D4", desc:"Departamento Pessoal", gradient:"linear-gradient(135deg,#06B6D4 0%,#0891B2 100%)" },
+  { id:"geral", name:"Toda a Empresa", icon:"🏢", color:"#4DAFFF", desc:"Soluções corporativas — disponíveis para todos os setores", gradient:"linear-gradient(135deg,#4DAFFF 0%,#2B8BDF 100%)" },
 ];
+// Setores de departamento (exclui o corporativo "geral", que tem destaque próprio na home)
+const DEPT_SECTORS = SECTORS.filter(s => s.id !== 'geral');
 
 const DEFAULT_AGENTS = [
   { id:"a1", sector:"bpo", name:"Agente Triagem de E-mails", type:"agente", description:"Classifica e direciona e-mails recebidos automaticamente para os departamentos corretos, priorizando por urgência e assunto.", tags:["e-mail","triagem","automação"] },
@@ -393,6 +398,7 @@ let newAgentType = 'agente';
 let adminTab = 'agents';
 let currentView = 'home';
 let fromRequestId = null;
+let editingAgentId = null;
 
 function saveData() {
   if (!isFirebaseConfigured || !agentsRef) return;
@@ -428,12 +434,35 @@ function renderHome() {
   const superCount = agents.filter(a => a.type === 'super-agente').length;
   document.getElementById('stats-bar').innerHTML = [
     { label:'Agentes Ativos', value: agents.length },
-    { label:'Setores', value: SECTORS.length },
+    { label:'Setores', value: DEPT_SECTORS.length },
     { label:'Super Agentes', value: superCount },
     { label:'Solicitações', value: requests.length },
   ].map(s => `<div style="text-align:center"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join('');
 
-  document.getElementById('sector-grid').innerHTML = SECTORS.map((s, i) => {
+  // Soluções corporativas (disponíveis para toda a empresa) — destaque no topo
+  const globalAgents = agents.filter(a => a.sector === 'geral');
+  const banner = document.getElementById('global-banner');
+  if (globalAgents.length) {
+    banner.innerHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;font-family:var(--font-mono)">🏢 Para toda a empresa</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+        ${globalAgents.map(a => {
+          const hasUrl = a.url && a.url.trim();
+          return `<div class="card-hover" style="background:linear-gradient(135deg,rgba(77,175,255,0.10),rgba(43,139,223,0.04));border:1px solid var(--border-light);border-radius:16px;padding:24px;${hasUrl?'':'cursor:default'}" ${hasUrl?`onclick="openAgentUrl('${encodeURIComponent(a.url.trim())}')"`:''}>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+              <h3 style="font-size:18px;font-weight:700">${a.name}</h3>
+              <span class="type-badge" style="background:var(--accent-glow);color:var(--blue)">★ Corporativo</span>
+            </div>
+            <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin-bottom:16px">${a.description}</p>
+            ${hasUrl ? `<button class="btn-primary" style="padding:10px 22px;font-size:14px" onclick="event.stopPropagation();openAgentUrl('${encodeURIComponent(a.url.trim())}')">Acessar ↗</button>` : `<span style="font-size:13px;color:var(--text-dim)">Em breve</span>`}
+          </div>`;
+        }).join('')}
+      </div>`;
+  } else {
+    banner.innerHTML = '';
+  }
+
+  document.getElementById('sector-grid').innerHTML = DEPT_SECTORS.map((s, i) => {
     const count = agents.filter(a => a.sector === s.id).length;
     return `<div class="sector-card card-hover anim-item" style="animation-delay:${i*0.1}s" onclick="navigate('sector','${s.id}')">
         <div class="accent-bar" style="background:${s.gradient}"></div>
@@ -488,6 +517,8 @@ function renderAgents() {
     } else {
       typeColor = s.color; typeBg = s.color + '15'; typeIcon = '●'; typeLabel = 'Agente';
     }
+    const hasUrl = agent.url && agent.url.trim();
+    const accessBtn = hasUrl ? `<button class="btn-primary" style="padding:9px 20px;font-size:13px" onclick="event.stopPropagation();openAgentUrl('${encodeURIComponent(agent.url.trim())}')">Acessar ↗</button>` : '';
     const tagsHtml = isExp ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;animation:fadeIn 0.3s ease">${agent.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : '';
     return `<div class="agent-card anim-item" style="animation-delay:${i*0.06}s;border-color:${isExp?s.color+'55':'var(--border)'}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
@@ -499,11 +530,18 @@ function renderAgents() {
           <p style="font-size:14px;color:var(--text-muted);line-height:1.6">${agent.description}</p>${tagsHtml}
         </div>
         <div style="display:flex;align-items:center;gap:8px">
+          ${accessBtn}
           <button class="btn-danger" onclick="event.stopPropagation();deleteAgent('${agent.id}','${agent.name.replace(/['"]/g,'')}')">🗑️</button>
           <div style="font-size:18px;color:var(--text-dim);transform:rotate(${isExp?90:0}deg);transition:transform 0.2s;cursor:pointer" onclick="expandedAgent=expandedAgent==='${agent.id}'?null:'${agent.id}';renderAgents()">›</div>
         </div>
       </div></div>`;
   }).join('');
+}
+
+// Abre a URL de um agente/plataforma em nova aba (recebe a URL codificada)
+function openAgentUrl(encoded) {
+  const url = decodeURIComponent(encoded);
+  if (url) window.open(url, '_blank', 'noopener');
 }
 
 
@@ -523,7 +561,7 @@ function deleteAgent(id, name) {
 
 function renderRequestForm() {
   const select = document.getElementById('req-sector');
-  select.innerHTML = '<option value="">Selecione seu setor</option>' + SECTORS.map(s => `<option value="${s.id}">${s.icon} ${s.name} — ${s.desc}</option>`).join('');
+  select.innerHTML = '<option value="">Selecione seu setor</option>' + DEPT_SECTORS.map(s => `<option value="${s.id}">${s.icon} ${s.name} — ${s.desc}</option>`).join('');
   document.getElementById('req-name').value = '';
   document.getElementById('req-desc').value = '';
   select.value = '';
@@ -596,8 +634,12 @@ function renderAdminAgents() {
             <span class="type-badge" style="background:${tb};color:${tc};font-size:10px">${tl}</span>
           </div>
           <div style="font-size:13px;color:var(--text-dim);line-height:1.5">${agent.description.substring(0,120)}${agent.description.length>120?'...':''}</div>
+          ${agent.url && agent.url.trim() ? `<div style="font-size:12px;color:var(--blue);margin-top:6px;font-family:var(--font-mono)">↗ ${agent.url.trim()}</div>` : ''}
         </div>
-        <button class="btn-danger" onclick="event.stopPropagation();openDeleteModal('${agent.id}','${agent.name.replace(/'/g,"\\'")}')">Excluir</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-ghost" style="padding:6px 14px;font-size:12px" onclick="event.stopPropagation();openEditAgentModal('${agent.id}')">Editar</button>
+          <button class="btn-danger" onclick="event.stopPropagation();openDeleteModal('${agent.id}','${agent.name.replace(/'/g,"\\'")}')">Excluir</button>
+        </div>
       </div>`;
     }).join('')}</div>`;
   }).join('');
@@ -670,7 +712,7 @@ function openEditRequestModal(id) {
   editingRequestId = id;
   editingPriority = req.priority || 'média';
   const select = document.getElementById('edit-req-sector');
-  select.innerHTML = SECTORS.map(s => `<option value="${s.id}">${s.icon} ${s.name} — ${s.desc}</option>`).join('');
+  select.innerHTML = DEPT_SECTORS.map(s => `<option value="${s.id}">${s.icon} ${s.name} — ${s.desc}</option>`).join('');
   document.getElementById('edit-req-name').value = req.name || '';
   select.value = req.sector || '';
   document.getElementById('edit-req-desc').value = req.description || '';
@@ -710,6 +752,7 @@ function openAddAgentModal() {
   document.getElementById('add-agent-modal').classList.remove('hidden');
   document.getElementById('add-agent-name').value = '';
   document.getElementById('add-agent-desc').value = '';
+  document.getElementById('add-agent-url').value = '';
   document.getElementById('add-agent-tags').value = '';
   const sel = document.getElementById('add-agent-sector');
   sel.innerHTML = '<option value="">Selecione o setor</option>' + SECTORS.map(s => `<option value="${s.id}">${s.icon} ${s.name}</option>`).join('');
@@ -717,7 +760,25 @@ function openAddAgentModal() {
   newAgentType = 'agente';
   selectAgentType('agente');
   document.getElementById('add-agent-error').classList.add('hidden');
+  document.getElementById('add-agent-title').textContent = 'Cadastrar Novo Agente';
   fromRequestId = null;
+  editingAgentId = null;
+}
+
+// Abre o modal em modo edição, pré-preenchido com os dados do agente
+function openEditAgentModal(id) {
+  const agent = agents.find(a => a.id === id);
+  if (!agent) return;
+  openAddAgentModal();
+  editingAgentId = id;
+  document.getElementById('add-agent-title').textContent = 'Editar Agente';
+  document.getElementById('add-agent-name').value = agent.name || '';
+  document.getElementById('add-agent-desc').value = agent.description || '';
+  document.getElementById('add-agent-url').value = agent.url || '';
+  document.getElementById('add-agent-tags').value = (agent.tags || []).join(', ');
+  document.getElementById('add-agent-sector').value = agent.sector || '';
+  newAgentType = agent.type || 'agente';
+  selectAgentType(newAgentType);
 }
 
 // Abre o modal de cadastro pré-preenchido com dados de uma solicitação aprovada
@@ -734,7 +795,7 @@ function cadastrarComoAgente(reqId) {
   // marca a origem para que após salvar a solicitação seja flagada como cadastrada
   fromRequestId = reqId;
 }
-function closeAddAgentModal() { document.getElementById('add-agent-modal').classList.add('hidden'); fromRequestId = null; }
+function closeAddAgentModal() { document.getElementById('add-agent-modal').classList.add('hidden'); fromRequestId = null; editingAgentId = null; }
 
 function selectAgentType(type) {
   newAgentType = type;
@@ -760,11 +821,20 @@ function saveNewAgent() {
   const name = document.getElementById('add-agent-name').value.trim();
   const sector = document.getElementById('add-agent-sector').value;
   const desc = document.getElementById('add-agent-desc').value.trim();
+  const url = document.getElementById('add-agent-url').value.trim();
   const tagsRaw = document.getElementById('add-agent-tags').value.trim();
   const errEl = document.getElementById('add-agent-error');
   if (!name || !sector || !desc) { errEl.textContent = 'Preencha nome, setor e descrição.'; errEl.classList.remove('hidden'); return; }
+  if (url && !/^https?:\/\//i.test(url)) { errEl.textContent = 'O link deve começar com http:// ou https://'; errEl.classList.remove('hidden'); return; }
   const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
-  const newAgent = { id: 'ag-'+Date.now(), sector, name, type: newAgentType, description: desc, tags };
+  if (editingAgentId) {
+    const updated = { id: editingAgentId, sector, name, type: newAgentType, description: desc, url, tags };
+    agents = agents.map(a => a.id === editingAgentId ? updated : a);
+    if (isFirebaseConfigured && agentsRef) { agentsRef.child(editingAgentId).set(updated); } else { saveData(); }
+    closeAddAgentModal(); renderAdmin();
+    return;
+  }
+  const newAgent = { id: 'ag-'+Date.now(), sector, name, type: newAgentType, description: desc, url, tags };
   agents.push(newAgent);
   if (isFirebaseConfigured && agentsRef) { agentsRef.child(newAgent.id).set(newAgent); } else { saveData(); }
   // Se veio de uma solicitação aprovada, marca como cadastrada

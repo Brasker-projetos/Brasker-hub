@@ -450,7 +450,7 @@ function navigate(view, sectorId) {
 function renderHome() {
   const superCount = agents.filter(a => a.type === 'super-agente').length;
   document.getElementById('stats-bar').innerHTML = [
-    { label:'Agentes Ativos', value: agents.length },
+    { label:'Soluções Ativas', value: agents.length },
     { label:'Setores', value: DEPT_SECTORS.length },
     { label:'Super Agentes', value: superCount },
     { label:'Solicitações', value: requests.length },
@@ -491,7 +491,7 @@ function renderHome() {
         <div style="font-size:20px;font-weight:700;margin-bottom:4px">${s.name}</div>
         <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">${s.desc}</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:13px;font-family:var(--font-mono);color:${s.color};font-weight:600">${count} agente${count!==1?'s':''}</span>
+          <span style="font-size:13px;font-family:var(--font-mono);color:${s.color};font-weight:600">${count} ${count!==1?'soluções':'solução'}</span>
           <span style="font-size:20px;color:var(--text-dim)">→</span>
         </div></div>`;
   }).join('');
@@ -505,7 +505,7 @@ function renderSector() {
   document.getElementById('sector-header').innerHTML = `
     <div class="sector-icon" style="width:56px;height:56px;border-radius:14px;background:${s.color}18;font-size:28px">${s.icon}</div>
     <div><h2 style="font-size:28px;font-weight:800">${s.name}</h2>
-    <div style="color:var(--text-muted);font-size:14px">${s.desc} • <span style="color:${s.color};font-weight:600">${total} agentes</span></div></div>`;
+    <div style="color:var(--text-muted);font-size:14px">${s.desc} • <span style="color:${s.color};font-weight:600">${total} ${total!==1?'soluções':'solução'}</span></div></div>`;
   document.getElementById('filter-group').innerHTML = ['todos','agente','super-agente','plataforma'].map(t => {
     const label = t === 'todos' ? 'Todos' : t === 'agente' ? 'Agentes' : t === 'super-agente' ? 'Super Agentes' : 'Plataformas';
     const isActive = currentFilter === t;
@@ -523,7 +523,7 @@ function renderAgents() {
   });
   const list = document.getElementById('agent-list');
   if (!filtered.length) {
-    list.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-dim)"><div style="font-size:40px;margin-bottom:12px">🤷</div><div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-muted)">Nenhum agente encontrado</div><div style="font-size:14px;margin-bottom:20px">${q?'Sem resultados para "'+q+'".':'Não há agentes nesta categoria.'}</div><button class="btn-primary" onclick="navigate('request')">Solicitar Agente</button></div>`;
+    list.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-dim)"><div style="font-size:40px;margin-bottom:12px">🤷</div><div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-muted)">Nenhuma solução encontrada</div><div style="font-size:14px;margin-bottom:20px">${q?'Sem resultados para "'+q+'".':'Não há soluções nesta categoria.'}</div><button class="btn-primary" onclick="navigate('request')">Solicitar Agente</button></div>`;
     return;
   }
   list.innerHTML = filtered.map((agent, i) => {

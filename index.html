@@ -471,7 +471,7 @@ function renderHome() {
           return `<div class="card-hover" style="background:linear-gradient(135deg,rgba(77,175,255,0.10),rgba(43,139,223,0.04));border:1px solid var(--border-light);border-radius:16px;padding:24px;${hasUrl?'':'cursor:default'}" ${hasUrl?`onclick="openAgentUrl('${encodeURIComponent(a.url.trim())}')"`:''}>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
               <h3 style="font-size:18px;font-weight:700">${a.name}</h3>
-              <span class="type-badge" style="background:var(--accent-glow);color:var(--blue)">★ Corporativo</span>
+              <span class="type-badge" style="background:rgba(212,175,55,0.15);color:#E6C34A;border:1px solid rgba(212,175,55,0.4)">★ Corporativo</span>
             </div>
             <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin-bottom:${a.acionamento&&a.acionamento.trim()?'10px':'16px'}">${a.description}</p>
             ${a.acionamento && a.acionamento.trim() ? `<div style="font-size:13px;color:var(--text-muted);background:var(--surface-hover);border-left:3px solid var(--lilac);padding:8px 12px;border-radius:8px;margin-bottom:16px"><span style="color:var(--lilac);font-weight:600">⚙️ Como acionar:</span> ${a.acionamento.trim()}</div>` : ''}

@@ -123,6 +123,51 @@
 </style>
 </head>
 <body>
+
+<!-- TELA DE LOGIN (gate de acesso — todos os colaboradores) -->
+<div id="authGate" style="position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;background:#0B0F1A;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">
+  <form id="authForm" style="width:340px;max-width:90vw;background:#131a26;border:1px solid #1f2a3a;border-radius:16px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#4DAFFF;margin-bottom:6px">Brasker</div>
+    <h1 style="font-size:20px;font-weight:800;color:#eaf2ff;margin:0 0 4px">Hub de Soluções</h1>
+    <p style="font-size:13px;color:#8a98ad;margin:0 0 22px">Acesso restrito aos colaboradores. Entre com seu e-mail e senha.</p>
+    <label style="display:block;font-size:12px;color:#9fb0c7;margin-bottom:6px">E-mail</label>
+    <input id="authEmail" type="email" autocomplete="username" required placeholder="voce@brasker.com.br"
+      style="width:100%;box-sizing:border-box;background:#0b0f17;border:1px solid #28354a;border-radius:10px;padding:11px 12px;color:#eaf2ff;font-size:14px;margin-bottom:14px;outline:none">
+    <label style="display:block;font-size:12px;color:#9fb0c7;margin-bottom:6px">Senha</label>
+    <input id="authPass" type="password" autocomplete="current-password" required placeholder="••••••••"
+      style="width:100%;box-sizing:border-box;background:#0b0f17;border:1px solid #28354a;border-radius:10px;padding:11px 12px;color:#eaf2ff;font-size:14px;margin-bottom:18px;outline:none">
+    <button type="submit" id="authBtn"
+      style="width:100%;background:#2563eb;border:none;border-radius:10px;padding:12px;color:#fff;font-size:14px;font-weight:700;cursor:pointer">Entrar</button>
+    <div id="authError" style="min-height:18px;margin-top:12px;font-size:12.5px;color:#ff6b6b;text-align:center"></div>
+  </form>
+</div>
+
+<!-- Botão flutuante: alterar minha senha (aparece após login) -->
+<button id="hubPwBtn" type="button" title="Alterar minha senha"
+  onclick="document.getElementById('hubPwModal').style.display='flex'"
+  style="display:none;position:fixed;bottom:16px;left:16px;z-index:9990;background:#1f2a3a;color:#cfe0f5;border:1px solid #2d3c52;border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">🔑 Alterar senha</button>
+
+<!-- Modal: alterar senha -->
+<div id="hubPwModal" style="display:none;position:fixed;inset:0;z-index:100001;align-items:center;justify-content:center;background:rgba(3,6,12,.72);font-family:system-ui,-apple-system,'Segoe UI',sans-serif">
+  <form id="hubPwForm" style="width:340px;max-width:90vw;background:#131a26;border:1px solid #1f2a3a;border-radius:16px;padding:28px 26px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <h2 style="font-size:18px;font-weight:800;color:#eaf2ff;margin:0 0 4px">Alterar senha</h2>
+    <p style="font-size:12.5px;color:#8a98ad;margin:0 0 18px">Confirme a senha atual e defina uma nova (mín. 6 caracteres).</p>
+    <input id="hubPwCurrent" type="password" autocomplete="current-password" required placeholder="Senha atual"
+      style="width:100%;box-sizing:border-box;background:#0b0f17;border:1px solid #28354a;border-radius:10px;padding:11px 12px;color:#eaf2ff;font-size:14px;margin-bottom:12px;outline:none">
+    <input id="hubPwNew" type="password" autocomplete="new-password" required placeholder="Nova senha"
+      style="width:100%;box-sizing:border-box;background:#0b0f17;border:1px solid #28354a;border-radius:10px;padding:11px 12px;color:#eaf2ff;font-size:14px;margin-bottom:12px;outline:none">
+    <input id="hubPwNew2" type="password" autocomplete="new-password" required placeholder="Repetir nova senha"
+      style="width:100%;box-sizing:border-box;background:#0b0f17;border:1px solid #28354a;border-radius:10px;padding:11px 12px;color:#eaf2ff;font-size:14px;margin-bottom:16px;outline:none">
+    <div style="display:flex;gap:10px">
+      <button type="button" onclick="document.getElementById('hubPwModal').style.display='none';document.getElementById('hubPwMsg').textContent=''"
+        style="flex:1;background:transparent;border:1px solid #2d3c52;border-radius:10px;padding:11px;color:#9fb0c7;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
+      <button type="submit" id="hubPwSave"
+        style="flex:1;background:#2563eb;border:none;border-radius:10px;padding:11px;color:#fff;font-size:14px;font-weight:700;cursor:pointer">Salvar</button>
+    </div>
+    <div id="hubPwMsg" style="min-height:18px;margin-top:12px;font-size:12.5px;color:#ff6b6b;text-align:center"></div>
+  </form>
+</div>
+
 <div class="bg-glow"></div>
 
 <header>
@@ -318,6 +363,7 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
 <script>
 // ================================================================
@@ -422,13 +468,12 @@ function refreshCurrentView() {
 // Observação: é um impedimento prático (não criptográfico). Para bloqueio
 // real, é preciso autenticação no Firebase — ver conversa.
 // ================================================================
-const ADMIN_PASSWORD = "Brasker#Hub2026";
-function isAdminUnlocked() { return sessionStorage.getItem('brasker_admin') === '1'; }
+// Admin agora é definido pelo LOGIN (Firebase Auth), não mais por senha no fonte.
+// Só este e-mail edita o catálogo; a regra do Realtime Database também exige esse e-mail.
+const ADMIN_EMAIL = "tecnologia@brasker.com.br";
+function isAdminUnlocked() { return (window.__hubUserEmail || '') === ADMIN_EMAIL; }
 function unlockAdmin() {
-  const p = prompt('Senha do Painel Administrativo:');
-  if (p === null) return false;
-  if (p === ADMIN_PASSWORD) { sessionStorage.setItem('brasker_admin', '1'); return true; }
-  alert('Senha incorreta.');
+  alert('Painel administrativo restrito ao administrador.');
   return false;
 }
 
@@ -917,7 +962,10 @@ function confirmDelete() {
 // ================================================================
 // INICIALIZAÇÃO: carrega dados do Firebase e inicia o app
 // ================================================================
-if (isFirebaseConfigured && agentsRef) {
+function startHubApp() {
+  if (!(isFirebaseConfigured && agentsRef)) return;
+  if (window.__hubStarted) return;
+  window.__hubStarted = true;
   let agentsLoaded = false;
   let requestsLoaded = false;
   let appStarted = false;
@@ -997,9 +1045,80 @@ if (isFirebaseConfigured && agentsRef) {
       document.getElementById('config-error-overlay').style.display = 'flex';
     }
   }, 8000);
+}
 
-} else if (!isFirebaseConfigured) {
-  // Firebase não configurado — já foi tratado acima
+// ================================================================
+// GATE DE AUTENTICAÇÃO — login obrigatório para todos os colaboradores.
+// Gerir quem acessa = Authentication > Usuários no Console (criar/excluir).
+// ================================================================
+if (isFirebaseConfigured) {
+  const _hubAuth = firebase.auth();
+  window.signOutHub = function(){ _hubAuth.signOut().then(function(){ location.reload(); }); };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const gate = document.getElementById('authGate');
+    const form = document.getElementById('authForm');
+    const pwBtn = document.getElementById('hubPwBtn');
+    function setErr(m){ const el=document.getElementById('authError'); if(el) el.textContent=m||''; }
+
+    if (form) form.addEventListener('submit', function(e){
+      e.preventDefault();
+      setErr('');
+      const btn = document.getElementById('authBtn');
+      if (btn){ btn.disabled=true; btn.textContent='Entrando...'; }
+      const email = (document.getElementById('authEmail').value||'').trim().toLowerCase();
+      const pass = document.getElementById('authPass').value;
+      _hubAuth.signInWithEmailAndPassword(email, pass).catch(function(err){
+        const code=(err&&err.code)||'';
+        let m='E-mail ou senha inválidos.';
+        if (code==='auth/operation-not-allowed') m='Provedor E-mail/senha não ativado no Console.';
+        else if (code.indexOf('api-key')!==-1) m='API key do Firebase inválida.';
+        else if (['auth/user-not-found','auth/invalid-credential','auth/wrong-password','auth/invalid-login-credentials'].indexOf(code)!==-1) m='Conta inexistente ou senha incorreta.';
+        setErr(m + (code?'  ['+code+']':''));
+      }).finally(function(){ if(btn){ btn.disabled=false; btn.textContent='Entrar'; } });
+    });
+
+    // Trocar a própria senha
+    const pwForm = document.getElementById('hubPwForm');
+    if (pwForm) pwForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      const msg=document.getElementById('hubPwMsg'); msg.style.color='#ff6b6b'; msg.textContent='';
+      const cur=document.getElementById('hubPwCurrent').value;
+      const n1=document.getElementById('hubPwNew').value;
+      const n2=document.getElementById('hubPwNew2').value;
+      if (n1.length<6){ msg.textContent='A nova senha precisa ter ao menos 6 caracteres.'; return; }
+      if (n1!==n2){ msg.textContent='As senhas novas não coincidem.'; return; }
+      const b=document.getElementById('hubPwSave'); b.disabled=true; b.textContent='Salvando...';
+      const user=_hubAuth.currentUser;
+      const cred=firebase.auth.EmailAuthProvider.credential(user.email, cur);
+      user.reauthenticateWithCredential(cred).then(function(){ return user.updatePassword(n1); }).then(function(){
+        msg.style.color='#46d39a'; msg.textContent='Senha alterada com sucesso!';
+        pwForm.reset();
+        setTimeout(function(){ document.getElementById('hubPwModal').style.display='none'; msg.textContent=''; },1500);
+      }).catch(function(err){
+        const code=(err&&err.code)||''; let m='Não foi possível alterar a senha.';
+        if (['auth/wrong-password','auth/invalid-credential','auth/invalid-login-credentials'].indexOf(code)!==-1) m='Senha atual incorreta.';
+        else if (code==='auth/weak-password') m='Senha muito fraca (mín. 6 caracteres).';
+        else if (code==='auth/requires-recent-login') m='Saia e entre de novo antes de trocar a senha.';
+        else if (code) m+='  ['+code+']';
+        msg.textContent=m;
+      }).finally(function(){ b.disabled=false; b.textContent='Salvar'; });
+    });
+
+    _hubAuth.onAuthStateChanged(function(user){
+      if (user) {
+        window.__hubUserEmail = (user.email||'').toLowerCase();
+        if (gate) gate.style.display='none';
+        if (pwBtn) pwBtn.style.display='block';
+        startHubApp();
+      } else {
+        window.__hubUserEmail = '';
+        const lo=document.getElementById('loading-overlay'); if(lo) lo.style.display='none';
+        if (pwBtn) pwBtn.style.display='none';
+        if (gate) gate.style.display='flex';
+      }
+    });
+  });
 }
 </script>
 </body>

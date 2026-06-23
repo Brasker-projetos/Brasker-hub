@@ -148,6 +148,11 @@
   onclick="document.getElementById('hubPwModal').style.display='flex'"
   style="display:none;position:fixed;bottom:16px;left:16px;z-index:9990;background:#1f2a3a;color:#cfe0f5;border:1px solid #2d3c52;border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">🔑 Alterar senha</button>
 
+<!-- Botão flutuante: sair (deslogar) -->
+<button id="hubSairBtn" type="button" title="Sair da conta"
+  onclick="if(window.signOutHub)window.signOutHub()"
+  style="display:none;position:fixed;bottom:16px;right:16px;z-index:9990;background:#1f2a3a;color:#cfe0f5;border:1px solid #2d3c52;border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">🚪 Sair</button>
+
 <!-- Modal: alterar senha -->
 <div id="hubPwModal" style="display:none;position:fixed;inset:0;z-index:100001;align-items:center;justify-content:center;background:rgba(3,6,12,.72);font-family:system-ui,-apple-system,'Segoe UI',sans-serif">
   <form id="hubPwForm" style="width:340px;max-width:90vw;background:#131a26;border:1px solid #1f2a3a;border-radius:16px;padding:28px 26px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
@@ -1060,6 +1065,7 @@ if (isFirebaseConfigured) {
     const gate = document.getElementById('authGate');
     const form = document.getElementById('authForm');
     const pwBtn = document.getElementById('hubPwBtn');
+    const sairBtn = document.getElementById('hubSairBtn');
     function setErr(m){ const el=document.getElementById('authError'); if(el) el.textContent=m||''; }
 
     if (form) form.addEventListener('submit', function(e){
@@ -1111,11 +1117,13 @@ if (isFirebaseConfigured) {
         window.__hubUserEmail = (user.email||'').toLowerCase();
         if (gate) gate.style.display='none';
         if (pwBtn) pwBtn.style.display='block';
+        if (sairBtn) sairBtn.style.display='block';
         startHubApp();
       } else {
         window.__hubUserEmail = '';
         const lo=document.getElementById('loading-overlay'); if(lo) lo.style.display='none';
         if (pwBtn) pwBtn.style.display='none';
+        if (sairBtn) sairBtn.style.display='none';
         if (gate) gate.style.display='flex';
       }
     });

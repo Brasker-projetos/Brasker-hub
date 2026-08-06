@@ -41,6 +41,24 @@
   @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
   @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
   @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-8px); } }
+  @keyframes brkSpin { to { transform:rotate(360deg); } }
+  @keyframes brkPulse {
+    0%,100% { transform:scale(1); filter:drop-shadow(0 0 10px rgba(77,175,255,0.45)); }
+    50% { transform:scale(1.08); filter:drop-shadow(0 0 26px rgba(240,122,174,0.55)); }
+  }
+  .loader-mark { position:relative; width:116px; height:116px; display:flex; align-items:center; justify-content:center; }
+  .loader-mark::before {
+    content:''; position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(from 0turn, transparent 0turn, rgba(77,175,255,0.9) 0.38turn, rgba(240,122,174,0.9) 0.62turn, transparent 0.88turn);
+    -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    animation:brkSpin 1.6s linear infinite;
+  }
+  .loader-mark img { width:64px; height:64px; animation:brkPulse 2.2s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .loader-mark::before { animation-duration:4s; }
+    .loader-mark img { animation:none; filter:drop-shadow(0 0 14px rgba(77,175,255,0.45)); }
+  }
   .anim-item { animation: fadeUp 0.5s ease both; }
   .bg-glow {
     position:fixed; top:-50%; right:-30%; width:80vw; height:80vw; border-radius:50%;
@@ -352,7 +370,7 @@
 
 <!-- OVERLAY DE CARREGAMENTO -->
 <div id="loading-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#0B0F1A;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
-  <div style="font-size:48px;animation:float 2s ease-in-out infinite">🤖</div>
+  <div class="loader-mark"><img src="favicon-192x192.png" alt="Brasker" width="64" height="64"></div>
   <div style="color:#4DAFFF;font-size:17px;font-weight:700;font-family:'Outfit',sans-serif">Carregando Hub de Soluções...</div>
   <div style="color:#4A5A7A;font-size:12px;font-family:'JetBrains Mono',monospace;margin-top:4px">Sincronizando dados em tempo real</div>
 </div>

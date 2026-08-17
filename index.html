@@ -543,7 +543,9 @@ function renderHome() {
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
         ${globalAgents.map(a => {
           const hasUrl = a.url && a.url.trim();
-          return `<div class="card-hover" style="background:linear-gradient(135deg,rgba(77,175,255,0.10),rgba(43,139,223,0.04));border:1px solid var(--border-light);border-radius:16px;padding:24px;${hasUrl?'':'cursor:default'}" ${hasUrl?`onclick="openAgentUrl('${encodeURIComponent(a.url.trim())}')"`:''}>
+          // Só o botão "Acessar" navega. O card inteiro não é clicável — clique
+          // fora do botão não deve levar a lugar nenhum.
+          return `<div class="card-hover" style="background:linear-gradient(135deg,rgba(77,175,255,0.10),rgba(43,139,223,0.04));border:1px solid var(--border-light);border-radius:16px;padding:24px;cursor:default">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
               <h3 style="font-size:18px;font-weight:700">${a.name}</h3>
               <span class="type-badge" style="background:rgba(212,175,55,0.15);color:#E6C34A;border:1px solid rgba(212,175,55,0.4)">★ Corporativo</span>

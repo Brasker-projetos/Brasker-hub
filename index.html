@@ -467,6 +467,7 @@ const DEFAULT_AGENTS = [
 
 let agents = [];
 let requests = [];
+let showDoneRequests = false;
 let currentSector = null;
 let currentFilter = 'todos';
 let expandedAgent = null;
@@ -750,8 +751,21 @@ function renderAdminRequests() {
     return;
   }
   const pc = { baixa:'var(--text-muted)', média:'var(--blue)', alta:'var(--bpo-color)', urgente:'var(--danger)' };
-  const sc = { pendente:'#F59E0B', 'em análise':'#6366F1', aprovado:'#10B981', recusado:'#EF4444' };
-  list.innerHTML = requests.map((req, i) => {
+  const sc = { pendente:'#F59E0B', 'em análise':'#6366F1', aprovado:'#10B981', recusado:'#EF4444', 'concluído':'#64748B' };
+  // Concluídas saem da lista principal e ficam numa aba própria (nada é apagado)
+  const doneCount = requests.filter(r => r.status === 'concluído').length;
+  const openCount = requests.length - doneCount;
+  const visible = requests.filter(r => showDoneRequests ? r.status === 'concluído' : r.status !== 'concluído');
+  const subTab = (done, label) => {
+    const active = showDoneRequests === done;
+    return `<button class="filter-btn" onclick="showDoneRequests=${done};renderAdminRequests()" style="border-color:${active?'var(--blue)':'var(--border)'};color:${active?'var(--blue)':'var(--text-muted)'};background:${active?'var(--accent-glow)':'transparent'}">${label}</button>`;
+  };
+  const subTabs = `<div style="display:flex;gap:6px">${subTab(false, 'Em aberto (' + openCount + ')')}${subTab(true, '✔ Concluídas (' + doneCount + ')')}</div>`;
+  if (!visible.length) {
+    list.innerHTML = subTabs + `<div style="text-align:center;padding:60px 20px;color:var(--text-dim)"><div style="font-size:40px;margin-bottom:12px">${showDoneRequests?'📦':'🎉'}</div><div style="font-size:16px;font-weight:600;color:var(--text-muted)">${showDoneRequests?'Nenhuma solicitação concluída':'Nenhuma solicitação em aberto'}</div></div>`;
+    return;
+  }
+  list.innerHTML = subTabs + visible.map((req, i) => {
     const sector = SECTORS.find(s => s.id === req.sector);
     const isApproved = req.status === 'aprovado';
     const alreadyRegistered = !!req.cadastrado;
@@ -761,22 +775,28 @@ function renderAdminRequests() {
     ) : '';
     return `<div class="anim-item" style="animation-delay:${i*0.06}s;background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:24px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-        <div><div style="font-weight:700;font-size:15px;margin-bottom:4px">${req.name}</div>
-        <div style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono)">${new Date(req.date).toLocaleDateString('pt-BR')} • ${sector?sector.icon+' '+sector.name:req.sector}</div></div>
+        <div><div style="font-weight:700;font-size:15px;margin-bottom:4px">${escapeHtml(req.name)}</div>
+        <div style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono)">${new Date(req.date).toLocaleDateString('pt-BR')} • ${sector?sector.icon+' '+sector.name:escapeHtml(req.sector)}</div></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <span style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;text-transform:uppercase;background:${pc[req.priority]}18;color:${pc[req.priority]}">${req.priority}</span>
+          <span style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;text-transform:uppercase;background:${pc[req.priority]}18;color:${pc[req.priority]}">${escapeHtml(req.priority)}</span>
           <select class="req-status-select" style="color:${sc[req.status]}" onchange="updateStatus('${req.id}',this.value)">
             <option value="pendente" ${req.status==='pendente'?'selected':''}>⏳ Pendente</option>
             <option value="em análise" ${req.status==='em análise'?'selected':''}>🔍 Em Análise</option>
             <option value="aprovado" ${req.status==='aprovado'?'selected':''}>✅ Aprovado</option>
             <option value="recusado" ${req.status==='recusado'?'selected':''}>❌ Recusado</option>
+            <option value="concluído" ${req.status==='concluído'?'selected':''}>✔ Concluído</option>
           </select>
           ${registerBtn}
           <button onclick="openEditRequestModal('${req.id}')" title="Editar solicitação" style="padding:6px 10px;font-size:13px;border-radius:8px;border:1.5px solid var(--blue);background:var(--accent-glow);color:var(--blue);font-weight:600;font-family:var(--font);cursor:pointer">✏️</button>
           <button class="btn-danger" onclick="deleteRequest('${req.id}')" title="Excluir solicitação" style="padding:6px 10px;font-size:13px">🗑️</button>
           </div></div>
-      <p style="font-size:14px;color:var(--text-muted);line-height:1.6">${req.description}</p></div>`;
+      <p style="font-size:14px;color:var(--text-muted);line-height:1.6">${escapeHtml(req.description)}</p></div>`;
   }).join('');
+}
+
+// Solicitações chegam de um formulário aberto: escapar antes de ir para o HTML
+function escapeHtml(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 }
 
 function updateStatus(id, status) {
